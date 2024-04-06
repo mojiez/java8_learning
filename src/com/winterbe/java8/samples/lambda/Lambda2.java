@@ -6,6 +6,7 @@ package com.winterbe.java8.samples.lambda;
 public class Lambda2 {
 
     @FunctionalInterface
+    // 这里的F T是什么？ 是泛型参数 使用 <> 定义
     public static interface Converter<F, T> {
         T convert(F from);
     }
