@@ -28,14 +28,14 @@ public class Lambda2 {
 
 
         // method reference
-
+//        Integer类中的valueof()是一个静态方法 可以通过直接引用已有的方法，来实现接口，不需要再编写额外的lambda表达式
         Converter<String, Integer> integerConverter2 = Integer::valueOf;
         Integer converted2 = integerConverter2.convert("123");
         System.out.println(converted2);   // result: 123
 
 
         Something something = new Something();
-
+        // 可以引用非静态的方法（直接使用类的实例:: 来引用）
         Converter<String, String> stringConverter = something::startsWith;
         String converted3 = stringConverter.convert("Java");
         System.out.println(converted3);    // result J

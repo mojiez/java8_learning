@@ -70,6 +70,7 @@ interface Formula {
         return Math.sqrt(a);
     }
 }
+
 ```
 
 Besides the abstract method `calculate` the interface `Formula` also defines the default method `sqrt`. Concrete classes only have to implement the abstract method `calculate`. The default method `sqrt` can be used out of the box.
@@ -86,6 +87,17 @@ Formula formula = new Formula() {
 
 formula.calculate(100);     // 100.0
 formula.sqrt(16);           // 4.0
+
+        // 定义一个实现了 Formula 接口的具体类
+//        class MyFormula implements Formula {
+//            @Override
+//            public double calculate(int a) {
+//                return sqrt(a * 100);
+//            }
+//        }
+//        MyFormula formula = new MyFormula();
+//        formula.calculate(100);  // 输出：100.0
+//        formula.sqrt(16);        // 输出：4.0
 ```
 
 The formula is implemented as an anonymous object. The code is quite verbose: 6 lines of code for such a simple calculation of `sqrt(a * 100)`. As we'll see in the next section, there's a much nicer way of implementing single method objects in Java 8.
@@ -149,7 +161,7 @@ How does lambda expressions fit into Java's type system? Each lambda corresponds
 
 lambda表达式在java中是通过函数式接口来实现的
 
-**函数式接口是指只包含一个抽象方法的接口。lambda 表达式可以被视为函数式接口的实例**
+**函数式接口是指只包含一个抽象方法的接口。lambda 表达式可以被视为函数式接口的实例** 调用的就是这个抽象方法
 
 只要接口只包含一个抽象方法，我们都可以使用lambda表达式
 
@@ -167,6 +179,7 @@ interface Converter<F, T> {
 ```
 
 ```java
+// 相当于new了一个Converter实例并且用lambda表达式实现了唯一的抽象方法
 Converter<String, Integer> converter = (from) -> Integer.valueOf(from);
 Integer converted = converter.convert("123");
 System.out.println(converted);    // 123
@@ -175,9 +188,11 @@ System.out.println(converted);    // 123
 Keep in mind that the code is also valid if the `@FunctionalInterface` annotation would be omitted.
 
 
-## Method and Constructor References
+## Method and Constructor References 方法引用和构造函数引用
 
 The above example code can be further simplified by utilizing static method references:
+
+通过利用静态方法引用 可以进一步简化代码
 
 ```java
 Converter<String, Integer> converter = Integer::valueOf;
@@ -185,7 +200,7 @@ Integer converted = converter.convert("123");
 System.out.println(converted);   // 123
 ```
 
-Java 8 enables you to pass references of methods or constructors via the `::` keyword. The above example shows how to reference a static method. But we can also reference object methods:
+Java 8 enables you to pass references of methods or constructors via the `::` keyword. The above example shows how to reference a static method. But we can also reference object methods:除了静态方法，也可以引用其他的方法
 
 ```java
 class Something {
@@ -208,7 +223,7 @@ Let's see how the `::` keyword works for constructors. First we define an exampl
 class Person {
     String firstName;
     String lastName;
-
+		// 两个不同的构造函数
     Person() {}
 
     Person(String firstName, String lastName) {
@@ -229,17 +244,23 @@ interface PersonFactory<P extends Person> {
 Instead of implementing the factory manually, we glue everything together via constructor references:
 
 ```java
+// 使用Person的构造函数 来实现接口的抽象方法create
 PersonFactory<Person> personFactory = Person::new;
+// 自动匹配到 有两个参数的构造函数（因为create有两个参数）
 Person person = personFactory.create("Peter", "Parker");
 ```
 
 We create a reference to the Person constructor via `Person::new`. The Java compiler automatically chooses the right constructor by matching the signature of `PersonFactory.create`.
 
-## Lambda Scopes
+## Lambda Scopes lambda表达式的范围
+
+从 lambda 表达式中访问外部作用域的变量与匿名对象非常相似。
 
 Accessing outer scope variables from lambda expressions is very similar to anonymous objects. You can access final variables from the local outer scope as well as instance fields and static variables.
 
-### Accessing local variables
+### Accessing local variables 访问局部变量
+
+可以访问lambda表达式以外的，final变量
 
 We can read final local variables from the outer scope of lambda expressions:
 
@@ -265,6 +286,7 @@ However `num` must be implicitly final for the code to compile. The following co
 
 ```java
 int num = 1;
+// 就是说虽然不用声明为final，但是实际上就是final的
 Converter<Integer, String> stringConverter =
         (from) -> String.valueOf(from + num);
 num = 3;
@@ -272,7 +294,15 @@ num = 3;
 
 Writing to `num` from within the lambda expression is also prohibited.
 
-### Accessing fields and static variables
+在lambda表达式内部修改final也是不行的
+
+### Accessing fields and static variables 访问字段 和 静态变量
+
+> 什么是字段？
+>
+> 字段是类或者对象中的成员变量
+>
+> 可以分为实例字段和静态字段
 
 In contrast to local variables, we have both read and write access to instance fields and static variables from within lambda expressions. This behaviour is well known from anonymous objects.
 
@@ -281,6 +311,7 @@ class Lambda4 {
     static int outerStaticNum;
     int outerNum;
 
+    // lambda表达式可以随便访问字段（要是在类外面怎么办？）
     void testScopes() {
         Converter<Integer, String> stringConverter1 = (from) -> {
             outerNum = 23;
@@ -295,18 +326,22 @@ class Lambda4 {
 }
 ```
 
-### Accessing Default Interface Methods
+### Accessing Default Interface Methods 访问默认接口方法
 
 Remember the formula example from the first section? Interface `Formula` defines a default method `sqrt` which can be accessed from each formula instance including anonymous objects. This does not work with lambda expressions.
 
 Default methods **cannot** be accessed from within lambda expressions. The following code does not compile:
 
+// 默认接口方法不能在lambda表达式中使用
+
 ```java
+// 错的 不能编译
 Formula formula = (a) -> sqrt(a * 100);
 ```
 
+## Built-in Functional Interfaces 内置的函数式接口
 
-## Built-in Functional Interfaces
+函数式接口 就是只包含一个抽象方法的接口
 
 The JDK 1.8 API contains many built-in functional interfaces. Some of them are well known from older versions of Java like `Comparator` or `Runnable`. Those existing interfaces are extended to enable Lambda support via the `@FunctionalInterface` annotation.
 
@@ -314,7 +349,11 @@ But the Java 8 API is also full of new functional interfaces to make your life e
 
 ### Predicates
 
+一元函数 boolean类型
+
 Predicates are boolean-valued functions of one argument. The interface contains various default methods for composing predicates to complex logical terms (and, or, negate)
+
+这个接口包含了各种默认方法，用于将 Predicates 组合成复杂的逻辑条件（与、或、非）。
 
 ```java
 Predicate<String> predicate = (s) -> s.length() > 0;
@@ -331,10 +370,11 @@ Predicate<String> isNotEmpty = isEmpty.negate();
 
 ### Functions
 
-Functions accept one argument and produce a result. Default methods can be used to chain multiple functions together (compose, andThen).
+Functions accept one argument and produce a result接收一个参数并产生一个结果. Default methods can be used to chain multiple functions together (compose, andThen).
 
 ```java
 Function<String, Integer> toInteger = Integer::valueOf;
+有一个默认方法andThen 可以将很多函数链到一起
 Function<String, String> backToString = toInteger.andThen(String::valueOf);
 
 backToString.apply("123");     // "123"
@@ -362,6 +402,8 @@ greeter.accept(new Person("Luke", "Skywalker"));
 
 Comparators are well known from older versions of Java. Java 8 adds various default methods to the interface.
 
+java8中对Comparators这个函数式接口添加了很多默认方法
+
 ```java
 Comparator<Person> comparator = (p1, p2) -> p1.firstName.compareTo(p2.firstName);
 
@@ -374,9 +416,11 @@ comparator.reversed().compare(p1, p2);  // < 0
 
 ## Optionals
 
-Optionals are not functional interfaces, but nifty utilities to prevent `NullPointerException`. It's an important concept for the next section, so let's have a quick look at how Optionals work.
+Optionals are not functional interfaces, but nifty utilities to prevent `NullPointerException`不是函数式接口但是很实用，用来防止NPE. It's an important concept for the next section, so let's have a quick look at how Optionals work.
 
 Optional is a simple container for a value which may be null or non-null. Think of a method which may return a non-null result but sometimes return nothing. Instead of returning `null` you return an `Optional` in Java 8.
+
+Optional 是一个简单的容器，用于存储可能为 null 或非 null 的值。想象一个方法可能返回非 null 结果，但有时却返回空值。在 Java 8 中，您可以返回一个 Optional，而不是返回 `null`。
 
 ```java
 Optional<String> optional = Optional.of("bam");
@@ -390,7 +434,7 @@ optional.ifPresent((s) -> System.out.println(s.charAt(0)));     // "b"
 
 ## Streams
 
-A `java.util.Stream` represents a sequence of elements on which one or more operations can be performed. Stream operations are either _intermediate_ or _terminal_. While terminal operations return a result of a certain type, intermediate operations return the stream itself so you can chain multiple method calls in a row. Streams are created on a source, e.g. a `java.util.Collection` like lists or sets (maps are not supported). Stream operations can either be executed sequentially or parallely.
+A `java.util.Stream` represents a sequence of elements 一系列的元素 on which one or more operations can be performed可以在其上执行多个操作. Stream operations are either _intermediate_ or _terminal_ stream的操作分为中间操作和终端操作. While terminal operations return a result of a certain type 终端操作会返回一个特定类型的结果, intermediate operations return the stream itself 中间操作会返回流本身 so you can chain multiple method calls in a row. Streams are created on a source, e.g. a `java.util.Collection` like lists or sets (maps are not supported). Stream operations can either be executed sequentially or parallely.
 
 > Streams are extremely powerful, so I wrote a separate [Java 8 Streams Tutorial](http://winterbe.com/posts/2014/07/31/java8-stream-tutorial-examples/). **You should also check out [Sequency](https://github.com/winterbe/sequency) as a similiar library for the web.**
 
@@ -439,6 +483,8 @@ stringCollection
 
 Keep in mind that `sorted` does only create a sorted view of the stream without manipulating the ordering of the backed collection. The ordering of `stringCollection` is untouched:
 
+**sorted方法不会改变元素的顺序！**
+
 ```java
 System.out.println(stringCollection);
 // ddd2, aaa2, bbb1, aaa1, bbb3, ccc, bbb2, ddd1
@@ -447,6 +493,8 @@ System.out.println(stringCollection);
 ### Map
 
 The _intermediate_ operation `map` converts each element into another object via the given function. The following example converts each string into an upper-cased string. But you can also use `map` to transform each object into another type. The generic type of the resulting stream depends on the generic type of the function you pass to `map`.
+
+中间操作 `map` 通过给定的函数将每个元素转换为另一个对象。以下示例将每个字符串转换为大写字符串。但是您也可以使用 `map` 将每个对象转换为另一种类型。结果流的泛型类型取决于您传递给 `map` 的函数的泛型类型。
 
 ```java
 stringCollection
@@ -461,6 +509,8 @@ stringCollection
 ### Match
 
 Various matching operations can be used to check whether a certain predicate matches the stream. All of those operations are _terminal_ and return a boolean result.
+
+Match操作可以用来检查某个特定的断言是否与流匹配。所有Match都是终端操作，返回一个布尔结果
 
 ```java
 boolean anyStartsWithA =
@@ -489,6 +539,8 @@ System.out.println(noneStartsWithZ);      // true
 
 Count is a _terminal_ operation returning the number of elements in the stream as a `long`.
 
+终端操作 返回类型为long
+
 ```java
 long startsWithB =
     stringCollection
@@ -499,10 +551,13 @@ long startsWithB =
 System.out.println(startsWithB);    // 3
 ```
 
-
 ### Reduce
 
+这个终端操作对流的元素进行归约，并使用给定的函数。结果是一个持有归约值的 `Optional`。
+
 This _terminal_ operation performs a reduction on the elements of the stream with the given function. The result is an `Optional` holding the reduced value.
+
+终端操作
 
 ```java
 Optional<String> reduced =
@@ -517,14 +572,19 @@ reduced.ifPresent(System.out::println);
 
 ## Parallel Streams
 
+并行流
+
 As mentioned above streams can be either sequential or parallel. Operations on sequential streams are performed on a single thread while operations on parallel streams are performed concurrently on multiple threads.
+
+**顺序流上的操作在单个线程上执行，而并行流上的操作在多个线程上并发执行**
 
 The following example demonstrates how easy it is to increase the performance by using parallel streams.
 
 First we create a large list of unique elements:
 
 ```java
-int max = 1000000;
+int max = 100 0000;
+// 100w大小的list
 List<String> values = new ArrayList<>(max);
 for (int i = 0; i < max; i++) {
     UUID uuid = UUID.randomUUID();
@@ -547,7 +607,7 @@ long t1 = System.nanoTime();
 long millis = TimeUnit.NANOSECONDS.toMillis(t1 - t0);
 System.out.println(String.format("sequential sort took: %d ms", millis));
 
-// sequential sort took: 899 ms
+// sequential sort took: 899 ms 使用 顺序流排序
 ```
 
 ### Parallel Sort
@@ -563,14 +623,22 @@ long t1 = System.nanoTime();
 long millis = TimeUnit.NANOSECONDS.toMillis(t1 - t0);
 System.out.println(String.format("parallel sort took: %d ms", millis));
 
-// parallel sort took: 472 ms
+// parallel sort took: 472 ms使用并行流排序
 ```
 
 As you can see both code snippets are almost identical but the parallel sort is roughly 50% faster. All you have to do is change `stream()` to `parallelStream()`.
 
 ## Maps
 
-As already mentioned maps do not directly support streams. There's no `stream()` method available on the `Map` interface itself, however you can create specialized streams upon the keys, values or entries of a map via `map.keySet().stream()`, `map.values().stream()` and `map.entrySet().stream()`. 
+Map不直接支持流， Map接口没有stream()方法
+
+As already mentioned maps do not directly support streams. There's no `stream()` method available on the `Map` interface itself, 
+
+但是您可以通过 `map.keySet().stream()`、`map.values().stream()` 和 `map.entrySet().stream()` 来创建基于映射的键、值或条目的专门流。
+
+however you can create specialized streams upon the keys, values or entries of a map via `map.keySet().stream()`, `map.values().stream()` and `map.entrySet().stream()`. 
+
+此外，Map 支持各种新的和有用的方法来执行常见的任务。
 
 Furthermore maps support various new and useful methods for doing common tasks.
 
@@ -578,6 +646,7 @@ Furthermore maps support various new and useful methods for doing common tasks.
 Map<Integer, String> map = new HashMap<>();
 
 for (int i = 0; i < 10; i++) {
+    // 如果没有再put
     map.putIfAbsent(i, "val" + i);
 }
 
@@ -589,6 +658,7 @@ The above code should be self-explaining: `putIfAbsent` prevents us from writing
 This example shows how to compute code on the map by utilizing functions:
 
 ```java
+// 如果键为3的映射存在
 map.computeIfPresent(3, (num, val) -> val + num);
 map.get(3);             // val33
 
