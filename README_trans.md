@@ -653,7 +653,7 @@ for (int i = 0; i < 10; i++) {
 map.forEach((id, val) -> System.out.println(val));
 ```
 
-The above code should be self-explaining: `putIfAbsent` prevents us from writing additional if null checks; `forEach` accepts a consumer to perform operations for each value of the map.
+The above code should be self-explaining: `putIfAbsent` prevents us from writing additional if null checks（使用这个可以不编写额外的空值检查）; `forEach` accepts a consumer to perform operations for each value of the map.
 
 This example shows how to compute code on the map by utilizing functions:
 
@@ -662,9 +662,11 @@ This example shows how to compute code on the map by utilizing functions:
 map.computeIfPresent(3, (num, val) -> val + num);
 map.get(3);             // val33
 
+// 如果键值为9的映射存在，就把它设为空
 map.computeIfPresent(9, (num, val) -> null);
 map.containsKey(9);     // false
 
+// 如果不存在才执行
 map.computeIfAbsent(23, num -> "val" + num);
 map.containsKey(23);    // true
 
@@ -692,6 +694,8 @@ Merging entries of a map is quite easy:
 
 ```java
 map.merge(9, "val9", (value, newValue) -> value.concat(newValue));
+// map.merge(9, "concat", (value, newValue) -> value.concat(newValue)) 中的第二个参数 "concat" 是指要与映射中现有值合并的值。如果映射中已经存在键为 9 的条目，则该值将与现有值合并，并将结果放回映射中。
+
 map.get(9);             // val9
 
 map.merge(9, "concat", (value, newValue) -> value.concat(newValue));
@@ -700,6 +704,11 @@ map.get(9);             // val9concat
 
 Merge either put the key/value into the map if no entry for the key exists, or the merging function will be called to change the existing value.
 
+Merge方法会根据键值存在性执行不同的操作：
+
+- 如果映射中不存在指定的键，则会将指定的键值对插入到映射中。
+- 如果映射中已经存在指定的键，则会调用合并函数来修改现有的值。
+
 
 ## Date API
 
@@ -707,7 +716,7 @@ Java 8 contains a brand new date and time API under the package `java.time`. The
 
 ### Clock
 
-Clock provides access to the current date and time. Clocks are aware of a timezone and may be used instead of `System.currentTimeMillis()` to retrieve the current time in milliseconds since Unix EPOCH. Such an instantaneous point on the time-line is also represented by the class `Instant`. Instants can be used to create legacy `java.util.Date` objects.
+Clock provides access to the current date and time. Clocks are aware of a timezone and may be used instead of **Clocks 考虑到了时区，可以用来替代** `System.currentTimeMillis()` to retrieve the current time in milliseconds since Unix EPOCH 来获取自 Unix EPOCH 以来的当前时间的毫秒数. Such an instantaneous（瞬时的） point （时间点） on the time-line is also represented by the class `Instant`. Instants can be used to create legacy `java.util.Date` objects.
 
 ```java
 Clock clock = Clock.systemDefaultZone();
@@ -719,7 +728,7 @@ Date legacyDate = Date.from(instant);   // legacy java.util.Date
 
 ### Timezones
 
-Timezones are represented by a `ZoneId`. They can easily be accessed via static factory methods. Timezones define the offsets which are important to convert between instants and local dates and times.
+Timezones are represented by a `ZoneId`. They can easily be accessed via static factory methods静态工厂方法. Timezones define the offsets which are important to convert between instants and local dates and times.
 
 ```java
 System.out.println(ZoneId.getAvailableZoneIds());
@@ -734,9 +743,9 @@ System.out.println(zone2.getRules());
 // ZoneRules[currentStandardOffset=-03:00]
 ```
 
-### LocalTime
+### LocalTime 当地时间
 
-LocalTime represents a time without a timezone, e.g. 10pm or 17:30:15. The following example creates two local times for the timezones defined above. Then we compare both times and calculate the difference in hours and minutes between both times.
+LocalTime represents a time without a timezone 表示没有时区的时间, e.g. 10pm or 17:30:15. The following example creates two local times for the timezones defined above. Then we compare both times and calculate the difference in hours and minutes between both times.
 
 ```java
 LocalTime now1 = LocalTime.now(zone1);
@@ -837,11 +846,44 @@ Unlike `java.text.NumberFormat` the new `DateTimeFormatter` is immutable and **t
 For details on the pattern syntax read [here](https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html).
 
 
-## Annotations
+## Annotations 注解
 
-Annotations in Java 8 are repeatable. Let's dive directly into an example to figure that out.
+Annotations in Java 8 are repeatable可重复的 可嵌套. Let's dive directly into an example to figure that out. 
 
 First, we define a wrapper annotation which holds an array of the actual annotations:
+
+### 注解
+
+1. 注解的作用？
+
+   注解是放在Java源码的类、方法、字段、参数前的一种特殊“注释”：
+
+   ```java
+   // this is a component:
+   @Resource("hello")
+   public class Hello {
+       @Inject
+       int n;
+   
+       @PostConstruct
+       public void hello(@Param String name) {
+           System.out.println(name);
+       }
+   
+       @Override
+       public String toString() {
+           return "Hello";
+       }
+   }
+   ```
+
+   注释会被编译器直接忽略，注解则可以被编译器打包进入class文件例如，一个配置了`@PostConstruct`的方法会在调用构造方法后自动被调用
+
+2. 如何定义一个注解？
+
+   ![截屏2024-04-08 20.09.12](/Users/mojie/Library/Application Support/typora-user-images/截屏2024-04-08 20.09.12.png)
+
+   
 
 ```java
 @interface Hints {

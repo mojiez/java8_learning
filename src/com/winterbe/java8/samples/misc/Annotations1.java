@@ -10,6 +10,8 @@ import java.lang.annotation.Target;
  * @author Benjamin Winterberg
  */
 public class Annotations1 {
+    // 注解
+    // 如何定义一个注解？
 
     @Target({ElementType.TYPE_PARAMETER, ElementType.TYPE_USE})
     @interface MyAnnotation {

@@ -43,6 +43,9 @@ public class Maps1 {
 
         map.merge(9, "concat", (value, newValue) -> value.concat(newValue));
         System.out.println(map.get(9));             // val9concat
+
+        map.merge(9, "moximoxi", (value, new_value) -> new_value);
+        System.out.println(map.get(9));             // moximoxi
     }
 
 }
